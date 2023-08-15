@@ -49,6 +49,7 @@ dependencies:
   shelf: ^1.4.1
   shelf_router: ^1.1.4
   permission_handler: ^10.4.3
+  flutter_svg: ^2.0.7
 
 dev_dependencies:
   flutter_test:
@@ -75,7 +76,7 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/yellow_stroke.png
-  #   - images/a_dot_ham.jpeg
+    - assets/images/x.svg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware

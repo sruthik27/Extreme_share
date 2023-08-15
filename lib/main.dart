@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:network_discovery/network_discovery.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
+ import 'package:flutter_svg/flutter_svg.dart';
 
 void main() => runApp(FileShareApp());
 
@@ -267,7 +268,14 @@ class _FileSharePageState extends State<FileSharePage> {
         textAlign: TextAlign.center,),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      appBar: AppBar(title: Text('Share FastX')),
+      appBar: AppBar(title: Row(
+        children: [
+          Text('Share Fa'),
+          SvgPicture.asset("assets/images/x.svg",
+          height: 25),
+          Text('tX'),
+        ],
+      )),
       body: Padding(
         padding: const EdgeInsets.all(10),
         child: Column(
@@ -305,7 +313,9 @@ class _FileSharePageState extends State<FileSharePage> {
                 itemBuilder: (context, index) {
                   final host = _activeHosts[index];
                   return ListTile(
-                    trailing: Icon(Icons.send, color: Colors.deepPurple,),
+                    trailing: InkWell(
+                      onTap: (){},
+                        child: Icon(Icons.send, color: Colors.deepPurple,),),
                     leading: Icon(Icons.person, color: Colors.amberAccent,),
                     title: Text(host),
                     onTap: () => _onHostSelected(host),
