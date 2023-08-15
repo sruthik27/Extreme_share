@@ -1,7 +1,8 @@
-import 'dart:convert';
+ import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:network_discovery/network_discovery.dart';
 import 'package:network_info_plus/network_info_plus.dart';
@@ -14,7 +15,7 @@ class FileShareApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'File Share App',
-      theme: ThemeData(primarySwatch: Colors.blue),
+      theme: ThemeData(primarySwatch: Colors.deepPurple),
       home: FileSharePage(),
     );
   }
@@ -244,69 +245,127 @@ class _FileSharePageState extends State<FileSharePage> {
 
   @override
   Widget build(BuildContext context) {
+    var media = MediaQuery.of(context);
+    double pwidth = media.size.width;
+    double pheight = media.size.height;
     return Scaffold(
-      appBar: AppBar(title: Text('File Share')),
-      body: Column(
-        children: [
-          Text('Your ip: $hostip'),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _activeHosts.length,
-              itemBuilder: (context, index) {
-                final host = _activeHosts[index];
-                return ListTile(
-                  title: Text(host),
-                  onTap: () => _onHostSelected(host),
-                );
-              },
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final message = _messages[index];
-                return ListTile(
-                  title: Text(message),
-                );
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
+      floatingActionButton: Container(
+        alignment: Alignment.center,
+        margin: EdgeInsets.symmetric(vertical: pheight*0.02),
+        width: pwidth*0.85,
+        height: pheight*0.04,
+        decoration: BoxDecoration(
+          color: Color(0x90FFF400),
+          borderRadius: BorderRadius.all(Radius.circular(50)),
+        ),
+        child: Text("Select an IP address to start sharing!",
+        style: TextStyle(
+          color: Colors.deepPurpleAccent,
+          fontSize: 15,
+          fontWeight: FontWeight.bold,
+        ),
+        textAlign: TextAlign.center,),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      appBar: AppBar(title: Text('Share FastX')),
+      body: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              alignment: Alignment.center,
               children: [
-                Expanded(
-                  child: TextField(
-                    controller: _messageController,
-                    decoration: InputDecoration(hintText: 'Type a message'),
-                    onSubmitted: (message) {
+                Image.asset("assets/images/yellow_stroke.png"),
+                Text('Your IP: $hostip',
+                style: TextStyle(
+                  color: Colors.deepPurpleAccent,
+                  fontSize: 30,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Ubuntu',
+                ),),
+              ],
+            ),
+            Padding(
+              padding: EdgeInsets.only(bottom: pheight*0.01, top: pheight*0.03),
+              child: Text("Avaible Hosts:",
+                style: TextStyle(
+                  color: Colors.deepPurpleAccent,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Ubuntu',
+                ),
+                textAlign: TextAlign.left,
+              ),
+            ),
+            Expanded(
+              child: ListView.separated(
+
+                itemCount: _activeHosts.length,
+                itemBuilder: (context, index) {
+                  final host = _activeHosts[index];
+                  return ListTile(
+                    trailing: Icon(Icons.send, color: Colors.deepPurple,),
+                    leading: Icon(Icons.person, color: Colors.amberAccent,),
+                    title: Text(host),
+                    onTap: () => _onHostSelected(host),
+                  );
+                }, separatorBuilder: (BuildContext context, int index) {
+                  return Container(
+                    color: Colors.deepPurple,
+                    height: 1,
+                    margin: EdgeInsets.symmetric(horizontal: 15),
+                  );
+              },
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: _messages.length,
+                itemBuilder: (context, index) {
+                  final message = _messages[index];
+                  return ListTile(
+                    title: Text(message),
+                  );
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _messageController,
+                      decoration: InputDecoration(hintText: 'Type a message'),
+                      onSubmitted: (message) {
+                        _sendMessage(message);
+                        _messageController.clear();
+                      },
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.send),
+                    onPressed: () {
+                      final message = _messageController.text.trim();
                       _sendMessage(message);
                       _messageController.clear();
                     },
                   ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.send),
-                  onPressed: () {
-                    final message = _messageController.text.trim();
-                    _sendMessage(message);
-                    _messageController.clear();
-                  },
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          ElevatedButton(
-            onPressed: () => _sendFile(context),
-            child: Text('Send File'),
-          ),
-          SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: _startServer,
-            child: Text('Start Receiver'),
-          ),
-        ],
+            ElevatedButton(
+              onPressed: () => _sendFile(context),
+              child: Text('Send File'),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _startServer,
+              child: Text('Start Receiver'),
+            ),
+          ],
+        ),
       ),
     );
   }
