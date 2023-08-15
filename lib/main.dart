@@ -1,12 +1,21 @@
- import 'dart:convert';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:network_discovery/network_discovery.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
+
+import 'chat.dart';
+
+String receiverIp = '';
+String hostip = '';
+List<String> activeHosts = [];
+String? selectedHost;
+Socket? socket;
+final TextEditingController messageController = TextEditingController();
+List<String> messages = [];
 
 void main() => runApp(FileShareApp());
 
@@ -29,12 +38,10 @@ class FileSharePage extends StatefulWidget {
 class _FileSharePageState extends State<FileSharePage> {
   String receiverIp = '';
   String hostip = '';
-  List<String> _activeHosts = [];
-  String? _selectedHost;
-  Socket? _socket;
-
-  final TextEditingController _messageController = TextEditingController();
-  List<String> _messages = [];
+  List<String> activeHosts = [];
+  String? selectedHost;
+  Socket? socket;
+  final TextEditingController messageController = TextEditingController();
 
   @override
   void initState() {
@@ -52,7 +59,7 @@ class _FileSharePageState extends State<FileSharePage> {
           await _findActiveHostsWithHostnames(subnet);
 
       setState(() {
-        _activeHosts = activeHostnames;
+        activeHosts = activeHostnames;
       });
     } else {
       print("Couldn't get IP Address");
@@ -82,21 +89,20 @@ class _FileSharePageState extends State<FileSharePage> {
 
   void _onHostSelected(String host) {
     setState(() {
-      _selectedHost = host;
+      selectedHost = host;
       receiverIp = host;
     });
-
     // Connect to the selected host
     _connectToHost();
   }
 
   Future<void> _connectToHost() async {
     try {
-      _socket = await Socket.connect(_selectedHost!, 12345);
-      print('Connected to $_selectedHost:12345');
+      socket = await Socket.connect(selectedHost!, 12345);
+      print('Connected to $selectedHost:12345');
 
       // Start listening for incoming messages from the host
-      _socket!.listen(
+      socket!.listen(
         (data) {
           final message = utf8.decode(data);
           print('Received message: $message');
@@ -108,43 +114,30 @@ class _FileSharePageState extends State<FileSharePage> {
             final fileName = fileInfo['name'];
 
             setState(() {
-              _messages.add('Received: $fileName');
+              messages.add('Received: $fileName');
             });
           } else {
             setState(() {
-              _messages.add('Received: $message');
+              messages.add('Received: $message');
             });
           }
         },
         onError: (error) {
           print('Error listening to socket: $error');
-          _socket?.destroy();
-          _socket = null;
+          socket?.destroy();
+          socket = null;
         },
         onDone: () {
           print('Connection closed by remote host.');
-          _socket?.destroy();
-          _socket = null;
+          socket?.destroy();
+          socket = null;
         },
       );
     } catch (e) {
-      print('Error connecting to $_selectedHost:12345');
+      print('Error connecting to $selectedHost:12345');
       print(e);
-      _socket?.destroy();
-      _socket = null;
-    }
-  }
-
-  // For sending messages
-  void _sendMessage(String message) {
-    if (message.trim().isNotEmpty && _socket != null) {
-      final messageData = {'type': 'message', 'data': message};
-      final messageJson = jsonEncode(messageData);
-      final messageBytes = utf8.encode(messageJson);
-      _socket!.add(messageBytes);
-      setState(() {
-        _messages.add('Sent: $message');
-      });
+      socket?.destroy();
+      socket = null;
     }
   }
 
@@ -200,7 +193,7 @@ class _FileSharePageState extends State<FileSharePage> {
               setState(() {
                 Map<String, dynamic> info = jsonDecode(utf8.decode(data));
                 if (info['type'] != 'file') {
-                  _messages.add('Received: ${info['data']}');
+                  messages.add('Received: ${info['data']}');
                 }
               });
             } catch (e) {
@@ -223,7 +216,7 @@ class _FileSharePageState extends State<FileSharePage> {
                   await file.writeAsBytes(bytes);
                   print('File received and saved: $fileName');
                   setState(() {
-                    _messages.add('Received: $fileName');
+                    messages.add('Received: $fileName');
                   });
                 } else {
                   print('No destination folder selected.');
@@ -251,20 +244,22 @@ class _FileSharePageState extends State<FileSharePage> {
     return Scaffold(
       floatingActionButton: Container(
         alignment: Alignment.center,
-        margin: EdgeInsets.symmetric(vertical: pheight*0.02),
-        width: pwidth*0.85,
-        height: pheight*0.04,
+        margin: EdgeInsets.symmetric(vertical: pheight * 0.02),
+        width: pwidth * 0.85,
+        height: pheight * 0.04,
         decoration: BoxDecoration(
           color: Color(0x90FFF400),
           borderRadius: BorderRadius.all(Radius.circular(50)),
         ),
-        child: Text("Select an IP address to start sharing!",
-        style: TextStyle(
-          color: Colors.deepPurpleAccent,
-          fontSize: 15,
-          fontWeight: FontWeight.bold,
+        child: Text(
+          "Select an IP address to start sharing!",
+          style: TextStyle(
+            color: Colors.deepPurpleAccent,
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+          ),
+          textAlign: TextAlign.center,
         ),
-        textAlign: TextAlign.center,),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       appBar: AppBar(title: Text('Share FastX')),
@@ -277,18 +272,22 @@ class _FileSharePageState extends State<FileSharePage> {
               alignment: Alignment.center,
               children: [
                 Image.asset("assets/images/yellow_stroke.png"),
-                Text('Your IP: $hostip',
-                style: TextStyle(
-                  color: Colors.deepPurpleAccent,
-                  fontSize: 30,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Ubuntu',
-                ),),
+                Text(
+                  'Your IP: $hostip',
+                  style: TextStyle(
+                    color: Colors.deepPurpleAccent,
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Ubuntu',
+                  ),
+                ),
               ],
             ),
             Padding(
-              padding: EdgeInsets.only(bottom: pheight*0.01, top: pheight*0.03),
-              child: Text("Avaible Hosts:",
+              padding:
+                  EdgeInsets.only(bottom: pheight * 0.01, top: pheight * 0.03),
+              child: Text(
+                "Avaible Hosts:",
                 style: TextStyle(
                   color: Colors.deepPurpleAccent,
                   fontSize: 20,
@@ -300,66 +299,45 @@ class _FileSharePageState extends State<FileSharePage> {
             ),
             Expanded(
               child: ListView.separated(
-
-                itemCount: _activeHosts.length,
+                itemCount: activeHosts.length,
                 itemBuilder: (context, index) {
-                  final host = _activeHosts[index];
+                  final host = activeHosts[index];
                   return ListTile(
-                    trailing: Icon(Icons.send, color: Colors.deepPurple,),
-                    leading: Icon(Icons.person, color: Colors.amberAccent,),
-                    title: Text(host),
-                    onTap: () => _onHostSelected(host),
-                  );
-                }, separatorBuilder: (BuildContext context, int index) {
+                      onTap: () {
+                        _onHostSelected(host);
+                      },
+                      trailing: IconButton(
+                        icon: Icon(Icons.send),
+                        color: Colors.deepPurple,
+                        onPressed: () {
+                          _onHostSelected(host);
+                          _sendFile(context);
+                        },
+                      ),
+                      leading: IconButton(
+                        icon: Icon(Icons.chat),
+                        color: Colors.amberAccent,
+                        onPressed: () {
+                          _onHostSelected(host);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ChatPage(ip: host),
+                            ),
+                          );
+                        },
+                      ),
+                      title: Text(host));
+                },
+                separatorBuilder: (BuildContext context, int index) {
                   return Container(
                     color: Colors.deepPurple,
                     height: 1,
                     margin: EdgeInsets.symmetric(horizontal: 15),
                   );
-              },
-              ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                itemCount: _messages.length,
-                itemBuilder: (context, index) {
-                  final message = _messages[index];
-                  return ListTile(
-                    title: Text(message),
-                  );
                 },
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _messageController,
-                      decoration: InputDecoration(hintText: 'Type a message'),
-                      onSubmitted: (message) {
-                        _sendMessage(message);
-                        _messageController.clear();
-                      },
-                    ),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.send),
-                    onPressed: () {
-                      final message = _messageController.text.trim();
-                      _sendMessage(message);
-                      _messageController.clear();
-                    },
-                  ),
-                ],
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () => _sendFile(context),
-              child: Text('Send File'),
-            ),
-            SizedBox(height: 20),
             ElevatedButton(
               onPressed: _startServer,
               child: Text('Start Receiver'),
