@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:network_discovery/network_discovery.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -23,6 +24,7 @@ class FileShareApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'File Share App',
       theme: ThemeData(primarySwatch: Colors.deepPurple),
       home: FileSharePage(),
@@ -35,6 +37,12 @@ class FileSharePage extends StatefulWidget {
   State<FileSharePage> createState() => _FileSharePageState();
 }
 
+enum state {
+  SEND,
+  RECIEVE,
+  INITIAL,
+}
+
 class _FileSharePageState extends State<FileSharePage> {
   String receiverIp = '';
   String hostip = '';
@@ -42,6 +50,7 @@ class _FileSharePageState extends State<FileSharePage> {
   String? selectedHost;
   Socket? socket;
   final TextEditingController messageController = TextEditingController();
+  var currState = state.INITIAL;
 
   @override
   void initState() {
@@ -241,28 +250,38 @@ class _FileSharePageState extends State<FileSharePage> {
     var media = MediaQuery.of(context);
     double pwidth = media.size.width;
     double pheight = media.size.height;
+    activeHosts.add("192.168.43.1");
     return Scaffold(
-      floatingActionButton: Container(
-        alignment: Alignment.center,
-        margin: EdgeInsets.symmetric(vertical: pheight * 0.02),
-        width: pwidth * 0.85,
-        height: pheight * 0.04,
-        decoration: BoxDecoration(
-          color: Color(0x90FFF400),
-          borderRadius: BorderRadius.all(Radius.circular(50)),
-        ),
-        child: Text(
-          "Select an IP address to start sharing!",
-          style: TextStyle(
-            color: Colors.deepPurpleAccent,
-            fontSize: 15,
-            fontWeight: FontWeight.bold,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ),
+      floatingActionButton: currState == state.SEND
+          ? Container(
+              alignment: Alignment.center,
+              margin: EdgeInsets.symmetric(vertical: pheight * 0.02),
+              width: pwidth * 0.85,
+              height: pheight * 0.04,
+              decoration: BoxDecoration(
+                color: Color(0x90FFF400),
+                borderRadius: BorderRadius.all(Radius.circular(50)),
+              ),
+              child: Text(
+                "Select an IP address to start sharing!",
+                style: TextStyle(
+                  color: Colors.deepPurpleAccent,
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            )
+          : Container(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      appBar: AppBar(title: Text('Share FastX')),
+      appBar: AppBar(
+          title: Row(
+        children: [
+          Text('Share Fa'),
+          SvgPicture.asset("assets/images/x.svg", height: 25),
+          Text('t'),
+        ],
+      )),
       body: Padding(
         padding: const EdgeInsets.all(10),
         child: Column(
@@ -283,65 +302,106 @@ class _FileSharePageState extends State<FileSharePage> {
                 ),
               ],
             ),
-            Padding(
-              padding:
-                  EdgeInsets.only(bottom: pheight * 0.01, top: pheight * 0.03),
-              child: Text(
-                "Avaible Hosts:",
-                style: TextStyle(
-                  color: Colors.deepPurpleAccent,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Ubuntu',
-                ),
-                textAlign: TextAlign.left,
-              ),
-            ),
-            Expanded(
-              child: ListView.separated(
-                itemCount: activeHosts.length,
-                itemBuilder: (context, index) {
-                  final host = activeHosts[index];
-                  return ListTile(
-                      onTap: () {
-                        _onHostSelected(host);
-                      },
-                      trailing: IconButton(
-                        icon: Icon(Icons.send),
-                        color: Colors.deepPurple,
-                        onPressed: () {
-                          _onHostSelected(host);
-                          _sendFile(context);
-                        },
+            currState == state.SEND
+                ? Padding(
+                    padding: EdgeInsets.only(
+                        bottom: pheight * 0.01, top: pheight * 0.03),
+                    child: Text(
+                      "Avaible Hosts:",
+                      style: TextStyle(
+                        color: Colors.deepPurpleAccent,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Ubuntu',
                       ),
-                      leading: IconButton(
-                        icon: Icon(Icons.chat),
-                        color: Colors.amberAccent,
-                        onPressed: () {
-                          _onHostSelected(host);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ChatPage(ip: host),
+                      textAlign: TextAlign.left,
+                    ),
+                  )
+                : Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Container(
+                          height: pheight * 0.4,
+                          child: Image.asset(
+                            "assets/images/choose.gif",
+                          ),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            ElevatedButton(
+                              onPressed: () {
+                                setState(() {
+                                  currState = state.SEND;
+                                });
+                              },
+                              child: Text('Send'),
                             ),
-                          );
-                        },
-                      ),
-                      title: Text(host));
-                },
-                separatorBuilder: (BuildContext context, int index) {
-                  return Container(
-                    color: Colors.deepPurple,
-                    height: 1,
-                    margin: EdgeInsets.symmetric(horizontal: 15),
-                  );
-                },
-              ),
-            ),
-            ElevatedButton(
-              onPressed: _startServer,
-              child: Text('Start Receiver'),
-            ),
+                            ElevatedButton(
+                              onPressed: _startServer,
+                              child: Text('Receive'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+            currState == state.SEND
+                ? Expanded(
+                    child: ListView.separated(
+                      itemCount: activeHosts.length,
+                      // itemCount: 2,
+                      itemBuilder: (context, index) {
+                        final host = activeHosts[index];
+                        return ListTile(
+// <<<<<<< HEAD
+//                     trailing: InkWell(
+//                       onTap: (){},
+//                         child: Icon(Icons.send, color: Colors.deepPurple,),),
+//                     leading: Icon(Icons.person, color: Colors.amberAccent,),
+//                     title: Text(host),
+//                     onTap: () => _onHostSelected(host),
+//                   );
+//                 }, separatorBuilder: (BuildContext context, int index) {
+// =======
+                            onTap: () {
+                              _onHostSelected(host);
+                            },
+                            trailing: IconButton(
+                              icon: Icon(Icons.send),
+                              color: Colors.deepPurple,
+                              onPressed: () {
+                                _onHostSelected(host);
+                                _sendFile(context);
+                              },
+                            ),
+                            leading: IconButton(
+                              icon: Icon(Icons.chat),
+                              color: Colors.amberAccent,
+                              onPressed: () {
+                                _onHostSelected(host);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ChatPage(ip: host),
+                                  ),
+                                );
+                              },
+                            ),
+                            title: Text(host));
+                        // title: Text("hi"));
+                      },
+                      separatorBuilder: (BuildContext context, int index) {
+                        return Container(
+                          color: Colors.deepPurple,
+                          height: 1,
+                          margin: EdgeInsets.symmetric(horizontal: 15),
+                        );
+                      },
+                    ),
+                  )
+                : Container(),
           ],
         ),
       ),
