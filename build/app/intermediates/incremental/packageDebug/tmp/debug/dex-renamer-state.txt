@@ -1,10 +1,4 @@
-<<<<<<< HEAD
-#Sat Aug 19 22:19:23 IST 2023
+#Sun Aug 20 11:16:45 IST 2023
 base.0=E\:\\Extreme_Share\\Extreme_share\\build\\app\\intermediates\\dex\\debug\\mergeDexDebug\\classes.dex
 renamed.0=classes.dex
-=======
-#Wed Aug 16 01:21:33 IST 2023
-base.0=C\:\\Users\\sruth\\Desktop\\Git_files\\extreme_share\\build\\app\\intermediates\\dex\\debug\\mergeDexDebug\\classes.dex
->>>>>>> 28db64c2a185b91de6916b3f587fd3b53ff26941
 path.0=classes.dex
-renamed.0=classes.dex

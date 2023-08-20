@@ -76,6 +76,8 @@ flutter:
   assets:
     - assets/images/yellow_stroke.png
     - assets/images/x.svg
+    - assets/images/choose.gif
+    - assets/images/Black_Splash.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware

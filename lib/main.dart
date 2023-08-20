@@ -36,7 +36,11 @@ class FileSharePage extends StatefulWidget {
   @override
   State<FileSharePage> createState() => _FileSharePageState();
 }
-
+enum state{
+  SEND,
+  RECIEVE,
+  INITIAL,
+}
 class _FileSharePageState extends State<FileSharePage> {
   String receiverIp = '';
   String hostip = '';
@@ -44,6 +48,7 @@ class _FileSharePageState extends State<FileSharePage> {
   String? selectedHost;
   Socket? socket;
   final TextEditingController messageController = TextEditingController();
+  var currState = state.INITIAL;
 
   @override
   void initState() {
@@ -243,8 +248,10 @@ class _FileSharePageState extends State<FileSharePage> {
     var media = MediaQuery.of(context);
     double pwidth = media.size.width;
     double pheight = media.size.height;
+    activeHosts.add("192.168.43.1");
     return Scaffold(
-      floatingActionButton: Container(
+      floatingActionButton:
+      currState == state.SEND ? Container(
         alignment: Alignment.center,
         margin: EdgeInsets.symmetric(vertical: pheight * 0.02),
         width: pwidth * 0.85,
@@ -262,14 +269,14 @@ class _FileSharePageState extends State<FileSharePage> {
           ),
           textAlign: TextAlign.center,
         ),
-      ),
+      ) : Container(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       appBar: AppBar(title: Row(
         children: [
           Text('Share Fa'),
           SvgPicture.asset("assets/images/x.svg",
           height: 25),
-          Text('tX'),
+          Text('t'),
         ],
       )),
       body: Padding(
@@ -292,7 +299,7 @@ class _FileSharePageState extends State<FileSharePage> {
                 ),
               ],
             ),
-            Padding(
+            currState == state.SEND ? Padding(
               padding:
                   EdgeInsets.only(bottom: pheight * 0.01, top: pheight * 0.03),
               child: Text(
@@ -305,23 +312,53 @@ class _FileSharePageState extends State<FileSharePage> {
                 ),
                 textAlign: TextAlign.left,
               ),
-            ),
+            ) :
             Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Container(
+              height: pheight*0.4,
+                      child: Image.asset("assets/images/choose.gif",),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      ElevatedButton(
+                        onPressed:(){
+      setState(() {
+        currState = state.SEND;
+      });
+      },
+                        child: Text('Send'),
+                      ),
+                      ElevatedButton(
+                        onPressed: _startServer,
+                        child: Text('Receive'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            currState == state.SEND ? Expanded(
               child: ListView.separated(
                 itemCount: activeHosts.length,
+                // itemCount: 2,
                 itemBuilder: (context, index) {
                   final host = activeHosts[index];
                   return ListTile(
-<<<<<<< HEAD
-                    trailing: InkWell(
-                      onTap: (){},
-                        child: Icon(Icons.send, color: Colors.deepPurple,),),
-                    leading: Icon(Icons.person, color: Colors.amberAccent,),
-                    title: Text(host),
-                    onTap: () => _onHostSelected(host),
-                  );
-                }, separatorBuilder: (BuildContext context, int index) {
-=======
+// <<<<<<< HEAD
+//                     trailing: InkWell(
+//                       onTap: (){},
+//                         child: Icon(Icons.send, color: Colors.deepPurple,),),
+//                     leading: Icon(Icons.person, color: Colors.amberAccent,),
+//                     title: Text(host),
+//                     onTap: () => _onHostSelected(host),
+//                   );
+//                 }, separatorBuilder: (BuildContext context, int index) {
+// =======
                       onTap: () {
                         _onHostSelected(host);
                       },
@@ -347,9 +384,9 @@ class _FileSharePageState extends State<FileSharePage> {
                         },
                       ),
                       title: Text(host));
+                      // title: Text("hi"));
                 },
                 separatorBuilder: (BuildContext context, int index) {
->>>>>>> 28db64c2a185b91de6916b3f587fd3b53ff26941
                   return Container(
                     color: Colors.deepPurple,
                     height: 1,
@@ -357,11 +394,9 @@ class _FileSharePageState extends State<FileSharePage> {
                   );
                 },
               ),
-            ),
-            ElevatedButton(
-              onPressed: _startServer,
-              child: Text('Start Receiver'),
-            ),
+            ) : Container(),
+
+
           ],
         ),
       ),
